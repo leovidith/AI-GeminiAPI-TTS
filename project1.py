@@ -57,7 +57,7 @@ def speak_text(text):
     engine.runAndWait()
 
 def create_gui():
-    api_key = "AIzaSyD2gAZda_jJnnm9NVkOhA1ty0GGDjy0CII"
+    api_key = "Your_API_Key"
     imp = ": just respond with a plain text not like a markdown file also without any escape sequences"
 
     recognizer = sr.Recognizer()
