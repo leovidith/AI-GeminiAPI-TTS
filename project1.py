@@ -1,8 +1,7 @@
 import pyttsx3 as tts
 import speech_recognition as sr
 import google.generativeai as genai
-import tkinter as tk
-from tkinter import messagebox
+import requests
 
 def configure_genai(api_key):
     genai.configure(api_key=api_key)
@@ -48,52 +47,55 @@ def get_response(chat_session, text, imp):
 
 def speak_text(text):
     engine = tts.init()
-    voices = engine.getProperty('voices')
-    for voice in voices:
-        if 'female' in voice.name.lower():
-            engine.setProperty('voice', voice.id)
-            break
     engine.say(text)
     engine.runAndWait()
 
-def create_gui():
-    api_key = "Your_API_Key"
+def get_weather(api_key, city):
+    base_url = "http://api.weatherapi.com/v1/current.json"
+    params = {
+        "key": api_key,
+        "q": city,
+        "aqi": "no"  # No air quality index data
+    }
+    response = requests.get(base_url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        weather = data['current']['condition']['text']
+        temp = data['current']['temp_c']
+        weather_info = f"The weather in {city} is currently {weather} with a temperature of {temp}°C."
+        return weather_info
+    else:
+        return "Could not retrieve weather information."
+
+def main():
+    genai_api_key = "geminiapikey"
+    weather_api_key = "weatherapikey"
     imp = ": just respond with a plain text not like a markdown file also without any escape sequences"
 
     recognizer = sr.Recognizer()
-    chat_session = configure_genai(api_key)
+    chat_session = configure_genai(genai_api_key)
 
-    def on_submit():
-        user_text = entry.get()
-        response_text = get_response(chat_session, user_text, imp)
-        messagebox.showinfo("Gemini", response_text)
-        root.after(100, lambda: speak_text(response_text))
+    choice = input("Enter 1 for text input or 0 for audio input: ")
 
-    def on_audio_input():
+    if choice == '1':
+        text = input("Please enter your text: ")
+    elif choice == '0':
         text = recognize_speech(recognizer)
-        if text:
-            response_text = get_response(chat_session, text, imp)
-            messagebox.showinfo("Gemini", response_text)
-            root.after(100, lambda: speak_text(response_text))
-        else:
-            messagebox.showinfo("Gemini", "No input provided.")
+    else:
+        print("Invalid choice")
+        return
 
-    root = tk.Tk()
-    root.title("Voice Assistant")
-
-    label = tk.Label(root, text="Enter your text:")
-    label.pack()
-
-    entry = tk.Entry(root, width=50)
-    entry.pack()
-
-    submit_button = tk.Button(root, text="Submit Text", command=on_submit)
-    submit_button.pack()
-
-    audio_button = tk.Button(root, text="Use Audio Input", command=on_audio_input)
-    audio_button.pack()
-
-    root.mainloop()
+    if 'weather' in text.lower():
+        city = input("Enter the city name for weather update: ")
+        response_text = get_weather(weather_api_key, city)
+        print(f"Weather: {response_text}")
+        speak_text(response_text)
+    elif text:
+        response_text = get_response(chat_session, text, imp)
+        print(f"Gemini: {response_text}")
+        speak_text(response_text)
+    else:
+        print("No input provided.")
 
 if __name__ == "__main__":
-    create_gui()
+    main()
